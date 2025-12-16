@@ -1,7 +1,7 @@
-# Using official python runtime base image
-FROM python:3.11-slim
+# base defines a base stage that uses the official python runtime base image
+FROM python:3.11-slim AS base
 
-# add curl for healthcheck
+# Add curl for healthcheck
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
     rm -rf /var/lib/apt/lists/*
@@ -12,6 +12,15 @@ WORKDIR /usr/local/app
 # Install our requirements.txt
 COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
+
+# dev defines a stage for development, where it'll watch for filesystem changes
+FROM base AS dev
+RUN pip install watchdog
+ENV FLASK_ENV=development
+CMD ["python", "app.py"]
+
+# final defines the stage that will bundle the application for production
+FROM base AS final
 
 # Copy our code from the current folder to the working directory inside the container
 COPY . .
